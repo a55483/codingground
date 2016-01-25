@@ -1,0 +1,9 @@
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:example="http://ws.cdyne.com/">
+    <SOAP-ENV:Header/>
+    <SOAP-ENV:Body>
+        <example:VerifyEmail>
+            <example:email>ha.lehong@bnpparibas.com</example:email>
+            <example:LicenseKey>a55483</example:LicenseKey>
+        </example:VerifyEmail>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
