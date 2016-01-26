@@ -24,9 +24,9 @@ public class Main {
         // TODO code application logic here
 
 
-        String adminName = "bnpuser";
-        String adminCompany = "50000";
-        String adminPwd = "Archer2011";
+        String adminName = "";
+        String adminCompany = "";
+        String adminPwd = "";
 
         String adminSession = createUserSessionFromInstance(adminName, adminCompany, adminPwd);
 
