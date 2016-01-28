@@ -1,0 +1,413 @@
+package test;
+
+//import static org.junit.Assert.*;
+//import javax.jws.soap.SOAPBinding.Use;
+
+import java.io.FileOutputStream;
+import java.io.StringWriter;
+import java.io.StringReader;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+
+import java.net.URL;
+import java.net.Proxy;
+import java.net.InetSocketAddress;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+
+import javax.xml.soap.Name;
+import javax.xml.soap.MessageFactory;
+import javax.xml.soap.SOAPBody;
+import javax.xml.soap.SOAPBodyElement;
+import javax.xml.soap.SOAPElement;
+import javax.xml.soap.SOAPEnvelope;
+import javax.xml.soap.SOAPHeader;
+import javax.xml.soap.SOAPMessage;
+import javax.xml.soap.SOAPPart;
+import javax.xml.soap.SOAPFactory ;
+
+import javax.xml.soap.SOAPConnectionFactory ;
+import javax.xml.soap.SOAPConnection ;
+import javax.xml.soap.MimeHeaders;
+
+import javax.xml.transform.Transformer ;
+import javax.xml.transform.TransformerFactory ;
+import javax.xml.transform.OutputKeys;
+
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.transform.Source;
+
+
+/** class Test.
+*/
+public final class Test
+{
+   private static SOAPConnection c ;
+   private static String wsdl = "http://www.webserviceX.NET" ;
+
+
+   /** Constructor. */
+   private Test() {
+   }
+   private static Test instance = null;
+   public static Test getInstance()
+   {
+      if(instance==null) { instance = new Test(); }
+      return instance;
+   }
+
+   //@org.junit.Test
+
+
+   //@WebService
+   //@SOAPBinding(style=Style.RPC, use=Use.LITERAL, parameterStyle=ParameterStyle.BARE)
+   public void test1() {
+      System.out.println("test1 >");
+         try{
+			MessageFactory factory = MessageFactory.newInstance();
+			SOAPMessage soapMsg = factory.createMessage();
+			SOAPPart part = soapMsg.getSOAPPart();
+
+			SOAPEnvelope envelope = part.getEnvelope();
+			SOAPHeader header = envelope.getHeader();
+			SOAPBody body = envelope.getBody();
+
+			header.addTextNode("Training Details");
+
+			SOAPBodyElement element = body.addBodyElement(envelope.createName("JAVA", "training", "http://JitendraZaa.com/blog"));
+			element.addChildElement("WS").addTextNode("Training on Web service");
+
+			SOAPBodyElement element1 = body.addBodyElement(envelope.createName("JAVA", "training", "http://JitendraZaa.com/blog"));
+			element1.addChildElement("Spring").addTextNode("Training on Spring 3.0");
+
+			soapMsg.writeTo(System.out);
+
+			FileOutputStream fOut = new FileOutputStream("test/test1.xml");
+			soapMsg.writeTo(fOut);
+
+			System.out.println();
+			System.out.println("SOAP msg created");
+
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+
+   }
+
+
+
+   public static SOAPConnection con(){
+      SOAPConnectionFactory fac =null;
+      SOAPConnection con=null ;
+      try{
+         fac = SOAPConnectionFactory.newInstance();
+         con = fac.createConnection();
+      }
+      catch(Exception e){
+         e.printStackTrace();
+      }
+      return con;
+   }
+
+   public static URL url(String strUrl) {
+      URL url =null;
+      try {
+         //Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("a55483:TiCa0701.@10.255.123.73", 8080));//ncproxy
+
+         url = new URL(strUrl) ;
+         url.openConnection();
+      }
+      catch(Exception e) {
+         e.printStackTrace();
+      }
+      return url;
+   }
+
+    public static SOAPMessage req(String ope) {
+       return req(ope, null) ;
+    }
+     public static SOAPMessage req(String ope, Map<String, String> args) {
+       return req(ope, args, "") ;
+    }
+    public static SOAPMessage req(String ope,  Map<String, String> args, String outXml) {
+      MessageFactory fac =null;
+      SOAPMessage req = null;
+
+      try{
+         fac = MessageFactory.newInstance();
+         req = fac.createMessage();
+
+         SOAPPart part = req.getSOAPPart();
+         SOAPEnvelope env = part.getEnvelope();
+         env.removeNamespaceDeclaration("SOAP-ENV") ;
+
+         env.setPrefix("soap");
+         //env.addNamespaceDeclaration("soap", "http://schemas.xmlsoap.org/soap/envelope/");
+
+         env.addNamespaceDeclaration("xsd",  "http://www.w3.org/2001/XMLSchema");
+         env.addNamespaceDeclaration("xsi",  "http://www.w3.org/2001/XMLSchema-instance");
+
+         SOAPHeader header = env.getHeader();
+         header.setPrefix("soap");
+         header.detachNode();
+
+         MimeHeaders hd = req.getMimeHeaders();
+         hd.addHeader("SOAPAction",wsdl + "/"+ope);
+
+         SOAPBody body = env.getBody(); body.setPrefix("soap");
+
+         Name name;
+         SOAPBodyElement element ;
+
+         name = env.createName(ope, "", wsdl);
+         element = body.addBodyElement(name); //element.addTextNode("");
+
+         for (Map.Entry<String, String> arg : args.entrySet())
+         {
+            element.addChildElement(arg.getKey()).addTextNode(arg.getValue());
+         }
+
+         if (!outXml.equals("") ) {
+      	   ByteArrayOutputStream out = new ByteArrayOutputStream();
+      	   req.writeTo(out);
+      	   String xml = new String(out.toByteArray());
+      	   xml = format(xml);
+
+      	   FileOutputStream f = new FileOutputStream("test/" + outXml);
+      	   Writer w = new OutputStreamWriter(f, "UTF-8");
+               w.write(xml);
+               w.close();
+
+               //fOut.write(xml.getBytes(Charset.forName("UTF-8"))) ;
+         }
+      }
+      catch(Exception e) {
+         e.printStackTrace();
+      }
+      return req ;
+   }
+
+   public static SOAPMessage call(SOAPMessage req) {
+      return call(req, "") ;
+   }
+   public static SOAPMessage call(SOAPMessage req, String outXml) {
+      URL url = null ;
+      SOAPConnection con = null ;
+      SOAPMessage res = null ;
+
+      try{
+         con = con() ;
+         url = url("http://www.webservicex.net/BibleWebservice.asmx?WSDL");
+         res = con.call(req, url);
+
+          if (!outXml.equals("") ) {
+      	   ByteArrayOutputStream out = new ByteArrayOutputStream();
+      	   res.writeTo(out);
+      	   String xml = new String(out.toByteArray());
+
+      	   xml = unescapeXML(xml);
+      	   xml = format(xml);
+
+      	   FileOutputStream f = new FileOutputStream("test/" + outXml);
+      	   Writer w = new OutputStreamWriter(f, "UTF-8");
+               w.write(xml);
+               w.close();
+
+               //fOut.write(xml.getBytes(Charset.forName("UTF-8"))) ;
+         }
+      }
+      catch(Exception e){
+         e.printStackTrace();
+      }
+      return res ;
+   }
+
+   public static String format(String input, int indent) {
+       try {
+           Source xmlInput = new StreamSource(new StringReader(input));
+           StringWriter stringWriter = new StringWriter();
+           StreamResult xmlOutput = new StreamResult(stringWriter);
+           TransformerFactory transformerFactory = TransformerFactory.newInstance();
+           transformerFactory.setAttribute("indent-number", indent);
+           Transformer transformer = transformerFactory.newTransformer();
+           transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+           //transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+           transformer.transform(xmlInput, xmlOutput);
+           return xmlOutput.getWriter().toString();
+       } catch (Exception e) {
+           throw new RuntimeException(e); // simple exception handling, please review it
+       }
+   }
+
+   public static String format(String input) {
+       return format(input, 2);
+   }
+
+   public static String unescapeXML( final String xml )
+   {
+       Pattern xmlEntityRegex = Pattern.compile( "&(#?)([^;]+);" );
+       //Unfortunately, Matcher requires a StringBuffer instead of a StringBuilder
+       StringBuffer unescapedOutput = new StringBuffer( xml.length() );
+
+       Matcher m = xmlEntityRegex.matcher( xml );
+       Map<String,String> builtinEntities = null;
+       String entity;
+       String hashmark;
+       String ent;
+       int code;
+       while ( m.find() ) {
+           ent = m.group(2);
+           hashmark = m.group(1);
+           if ( (hashmark != null) && (hashmark.length() > 0) ) {
+               code = Integer.parseInt( ent );
+               entity = Character.toString( (char) code );
+           } else {
+               //must be a non-numerical entity
+               if ( builtinEntities == null ) {
+                   builtinEntities = buildBuiltinXMLEntityMap();
+               }
+               entity = builtinEntities.get( ent );
+               if ( entity == null ) {
+                   //not a known entity - ignore it
+                   entity = "&" + ent + ';';
+               }
+           }
+           m.appendReplacement( unescapedOutput, entity );
+       }
+       m.appendTail( unescapedOutput );
+
+       return unescapedOutput.toString();
+   }
+   private static Map<String,String> buildBuiltinXMLEntityMap()
+   {
+       Map<String,String> entities = new HashMap<String,String>(10);
+       entities.put( "lt", "<" );
+       entities.put( "gt", ">" );
+       entities.put( "amp", "&" );
+       entities.put( "apos", "'" );
+       entities.put( "quot", "\"" );
+       return entities;
+   }
+
+   public static void test2() {
+      try{
+         final String authUser = "a55483";
+         final String authPassword = "TiCa0701.";
+
+         System.setProperty("http.proxySet", "true");
+         System.setProperty("http.proxyHost", "ncproxy");
+         System.setProperty("http.proxyPort", "8080");
+
+         System.setProperty("http.proxyUser", authUser);
+         System.setProperty("http.proxyPassword", authPassword);
+
+         Authenticator.setDefault(
+           new Authenticator() {
+             public PasswordAuthentication getPasswordAuthentication() {
+               return new PasswordAuthentication(authUser, authPassword.toCharArray());
+             }
+           }
+         );
+
+         System.out.println();
+         System.out.println("test2>");
+         if (true) {
+            String ope1 = "GetBookTitles" ;
+            Map<String, String> args1 = new HashMap<String, String>();//re-order
+            SOAPMessage req1 = req(ope1, args1, "req1.xml") ;
+            SOAPMessage res1 = call(req1, "res1.xml") ;
+
+            System.out.println(ope1 + ": " +args1 ) ;
+            System.out.println("req1: "); req1.writeTo(System.out) ;
+
+            System.out.println() ;
+            System.out.println("res1: OK"); //res1.writeTo(System.out) ;
+         }
+
+
+         System.out.println() ;
+         System.out.println() ;
+
+
+         if (true) {
+            String ope2 = "GetBibleWordsByBookTitleAndChapter" ;
+            Map<String, String> args2 = new LinkedHashMap<String, String>();//keep order
+            args2.put("BookTitle","Leviticus") ;
+            args2.put("chapter","1") ;
+
+            SOAPMessage req2 = req(ope2, args2, "req2.xml") ;
+            SOAPMessage res2 = call(req2, "res2.xml") ;
+
+             System.out.println(ope2 + ": " +args2 ) ;
+            System.out.println("req2: "); req2.writeTo(System.out) ;
+
+             System.out.println() ;
+             System.out.println("res2: "); res2.writeTo(System.out) ;
+         }
+
+
+
+         /*
+         MessageFactory factory = MessageFactory.newInstance();
+         SOAPMessage message = factory.createMessage();
+
+         //method 2
+         if(false) {
+             SOAPPart soapPart = message.getSOAPPart();
+             SOAPEnvelope envelope = soapPart.getEnvelope();
+             SOAPHeader header = envelope.getHeader();
+             SOAPBody body = envelope.getBody();
+         }
+
+         SOAPBody body = message.getSOAPBody();
+         SOAPFactory soapFactory = SOAPFactory.newInstance();
+
+         Name bodyName = soapFactory.createName("GetLastTradePrice","m", "http://wombat.ztrade.com");
+         SOAPBodyElement bodyElement = body.addBodyElement(bodyName);
+
+         Name name = soapFactory.createName("symbol");
+         SOAPElement symbol = bodyElement.addChildElement(name);
+         symbol.addTextNode("SUNW");
+
+
+
+         java.net.URL endpoint = new URL("http://wombat.ztrade.com/quotes");
+         SOAPMessage response = connection.call(message, endpoint);
+
+         SOAPBody soapBody = response.getSOAPBody();
+         Iterator iterator = soapBody.getChildElements(bodyName);
+         SOAPBodyElement bodyElement2 = (SOAPBodyElement)iterator.next();
+         String lastPrice = bodyElement2.getValue();
+
+         System.out.printf("The last price for SUNW is %s",lastPrice );  //System.out.println(lastPrice);
+
+
+         SOAPHeader header = message.getSOAPHeader();
+         Name headerName = soapFactory.createName("Claim", "wsi", "http://ws-i.org/schemas/conformanceClaim/");
+         SOAPHeaderElement headerElement = header.addHeaderElement(headerName);
+         headerElement.addAttribute(soapFactory.createName("conformsTo"), "http://ws-i.org/profiles/basic1.0/");
+         */
+      }catch(Exception e){
+         e.printStackTrace();
+      }
+   }
+
+   public static void main(String[] args) throws Exception
+   {
+      //Test.getInstance().test1() ;
+
+      test2() ;
+
+
+   }
+
+}
